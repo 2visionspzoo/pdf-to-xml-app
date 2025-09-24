@@ -1,0 +1,63 @@
+════════════════════════════════════════════════════════════════════════
+                    INSTRUKCJA INSTALACJI POPPLER
+════════════════════════════════════════════════════════════════════════
+
+PROBLEM: 
+Poppler nie jest poprawnie zainstalowany. Folder C:\poppler istnieje, 
+ale brakuje w nim plików wykonywalnych (pdftoppm.exe, pdfinfo.exe).
+
+ROZWIĄZANIE:
+
+1. POBIERZ POPPLER:
+   ─────────────────
+   Otwórz link:
+   https://github.com/oschwartz10612/poppler-windows/releases
+   
+   Znajdź najnowszą wersję (np. Release-24.08.0-0)
+   Kliknij "Assets" na dole
+   Pobierz plik ZIP (około 15-20 MB)
+
+2. ROZPAKUJ:
+   ──────────
+   Rozpakuj pobrany plik ZIP
+   Zobaczysz folder "poppler-24.08.0" (lub podobny)
+   Wewnątrz jest folder "Library"
+
+3. SKOPIUJ:
+   ─────────
+   Skopiuj cały folder "Library" do C:\poppler\
+   
+   Struktura powinna wyglądać tak:
+   C:\poppler\
+   └── Library\
+       ├── bin\           <- tutaj są pliki .exe
+       │   ├── pdftoppm.exe
+       │   ├── pdfinfo.exe
+       │   ├── pdftocairo.exe
+       │   └── ... (około 20 plików .exe)
+       ├── include\
+       ├── lib\
+       └── share\
+
+4. SPRAWDŹ:
+   ────────
+   Uruchom: skrypty_testowe\check_poppler.bat
+   Powinno pokazać:
+   ✓ pdftoppm.exe znaleziony
+   ✓ pdfinfo.exe znaleziony
+
+5. TESTUJ:
+   ───────
+   Uruchom: skrypty_testowe\test_final.bat
+   Wszystko powinno być zielone ✓
+
+════════════════════════════════════════════════════════════════════════
+ALTERNATYWA (jeśli powyższe nie działa):
+════════════════════════════════════════════════════════════════════════
+
+Możesz też pobrać Poppler z conda-forge:
+1. Zainstaluj Anaconda lub Miniconda
+2. Uruchom: conda install -c conda-forge poppler
+3. Skopiuj pliki z conda\pkgs\poppler-*\Library\bin do C:\poppler\Library\bin
+
+════════════════════════════════════════════════════════════════════════

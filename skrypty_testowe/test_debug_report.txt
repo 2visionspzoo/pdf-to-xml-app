@@ -1,0 +1,14 @@
+RAPORT TESTÓW DEBUGOWANIA
+==================================================
+Data: 2025-09-24 09:12:52.388141
+
+Importy: PASS
+Moduły: PASS
+Konfiguracja: FAIL
+OCR: PASS
+PDF: PASS
+Detekcja: FAIL
+XML: FAIL
+Pipeline: PASS
+
+Wynik: 5/8 testów zaliczonych
