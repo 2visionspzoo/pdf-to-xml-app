@@ -160,13 +160,29 @@ class UniversalParser(BaseInvoiceParser):
         # Usuń słowo kluczowe z początku
         keywords_to_remove = ['Sprzedawca', 'SPRZEDAWCA', 'Nabywca', 'NABYWCA', 
                              'Wystawca', 'Odbiorca', 'Kupujący', 'Dostawca']
+        original_text = text
         for kw in keywords_to_remove:
-            text = text.replace(kw, '', 1).strip()
+            # Usuń słowo kluczowe i dwukropek jeśli występuje
+            text = re.sub(rf'{kw}\s*:?\s*', '', text, 1, re.IGNORECASE).strip()
+        
+        # Jeśli po usunięciu został tylko dwukropek lub puste, szukaj głębiej
+        if not text or text == ':':
+            # Szukaj nazwy w kolejnych liniach
+            lines = original_text.split('\n')
+            for i, line in enumerate(lines):
+                # Pomijamy pierwszą linię z etykietą
+                if i == 0:
+                    continue
+                clean_line = line.strip()
+                # Jeśli linia nie jest pusta i nie zawiera tylko słów kluczowych
+                if clean_line and clean_line != ':' and not any(kw in clean_line for kw in ['NIP', 'REGON', 'ul.']):
+                    text = clean_line
+                    break
         
         # Podziel na linie
-        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        lines = [line.strip() for line in text.split('\n') if line.strip() and line.strip() != ':']
         
-        # Pierwsza linia to zwykle nazwa
+        # Pierwsza niepusta linia to zwykle nazwa
         if lines:
             # Usuń NIP jeśli jest w nazwie
             name_line = lines[0]
@@ -237,7 +253,8 @@ class UniversalParser(BaseInvoiceParser):
                 fixed_row = self._fix_merged_row(row, column_map)
                 if fixed_row:
                     item = self._parse_item_row_improved(fixed_row, column_map)
-                    if item and item.name:
+                    # Filtruj pozycje z nazwą "None" lub puste
+                    if item and item.name and item.name.lower() not in ['none', '', 'brak', 'null']:
                         self.invoice_data['items'].append(item.to_dict())
     
     def _is_items_table_improved(self, table: List[List[str]]) -> bool:
@@ -405,24 +422,47 @@ class UniversalParser(BaseInvoiceParser):
             # Usuń wszystkie białe znaki
             text = text.strip()
             
+            # Jeśli to puste lub None, zwróć 0
+            if not text or text.lower() in ['none', '', '-', 'brak']:
+                return Decimal('0')
+            
             # Usuń znaki waluty i inne
             text = re.sub(r'[zł$€£¥]', '', text)
             
-            # Usuń spacje używane jako separatory tysięcy
-            text = text.replace(' ', '')
-            
-            # Zamień przecinek na kropkę (polska notacja)
-            text = text.replace(',', '.')
+            # Obsługa polskiej notacji - sprawdź czy jest spacja jako separator tysięcy i przecinek jako separator dziesiętny
+            if ',' in text and ' ' in text:
+                # Polski format: 1 234,56
+                text = text.replace(' ', '').replace(',', '.')
+            elif ',' in text and text.count(',') == 1:
+                # Może być 1234,56 lub 1,234.56
+                parts = text.split(',')
+                if len(parts) == 2 and len(parts[1]) == 2:
+                    # To prawdopodobnie polski format z przecinkiem dziesiętnym
+                    text = text.replace(',', '.')
+                elif len(parts) == 2 and len(parts[1]) == 3:
+                    # To prawdopodobnie angielski format z przecinkiem jako separator tysięcy
+                    text = text.replace(',', '')
+            else:
+                # Standardowe usuwanie spacji
+                text = text.replace(' ', '')
+                # Zamień przecinek na kropkę
+                text = text.replace(',', '.')
             
             # Usuń wszystko oprócz cyfr, kropki i minusa
             text = re.sub(r'[^\d.-]', '', text)
             
             # Parsuj do Decimal
-            if text:
-                return Decimal(text)
+            if text and text != '-':
+                value = Decimal(text)
+                # Sprawdź czy wartość nie jest podejrzanie duża (np. 10000.00 jako domyślna)
+                if value == Decimal('10000.00'):
+                    # Log this for debugging
+                    print(f"Warning: Found default value 10000.00, might need manual verification")
+                return value
             else:
                 return Decimal('0')
-        except:
+        except Exception as e:
+            print(f"Error parsing amount '{text}': {e}")
             return Decimal('0')
     
     def _extract_summary_improved(self, text: str, tables: List[List[List[str]]]):

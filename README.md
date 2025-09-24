@@ -1,152 +1,161 @@
-# 📄 PDF-to-XML Converter for Comarch Optima
+# PDF to XML Converter for Comarch ERP Optima
 
-System do automatycznej konwersji faktur PDF do formatu XML zgodnego z Comarch Optima.
+System automatycznej konwersji faktur PDF do formatu XML zgodnego z Comarch ERP Optima.
 
-## 🚀 SZYBKI START
+## 📋 Opis projektu
 
-### ⚡ DWA TRYBY PRACY:
+Aplikacja automatycznie przetwarza faktury w formacie PDF, ekstraktuje z nich dane za pomocą OCR (Tesseract) i generuje pliki XML gotowe do importu w systemie Comarch ERP Optima.
 
-#### 1️⃣ **JEDEN PLIK XML DLA WSZYSTKICH FAKTUR** (ZALECANE!)
+### Główne funkcjonalności:
+- 🔍 **OCR faktur PDF** - automatyczne rozpoznawanie tekstu ze skanów
+- 📊 **Inteligentny parser** - wyciąganie kluczowych danych (sprzedawca, nabywca, pozycje, kwoty)
+- 🔄 **Mapowanie do XML** - generowanie struktury zgodnej z Comarch ERP Optima
+- 🛠️ **Obsługa błędów** - automatyczna korekcja i walidacja danych
+- 📁 **Przetwarzanie wsadowe** - obsługa wielu faktur jednocześnie
+
+## 🚀 Szybki start
+
+### Wymagania systemowe
+- Python 3.8+
+- Tesseract OCR 5.0+
+- Poppler (do konwersji PDF)
+- Windows 10/11 (testowane)
+
+### Instalacja
+
+1. **Sklonuj repozytorium**
 ```bash
-# Skrypt Python
-python konwertuj_do_jednego_xml.py
-
-# Lub batch Windows  
-uruchom_jeden_xml.bat
-
-# Lub bezpośrednio
-python app\main_multi.py
+git clone https://github.com/your-username/pdf-to-xml-app.git
+cd pdf-to-xml-app
 ```
-**Rezultat:** `output\wszystkie_faktury.xml` zawierający wszystkie faktury
 
-#### 2️⃣ **OSOBNY XML DLA KAŻDEJ FAKTURY**
+2. **Zainstaluj zależności Python**
 ```bash
-# GUI
+pip install -r requirements.txt
+```
+
+3. **Zainstaluj Tesseract OCR**
+   - Pobierz instalator z: https://github.com/UB-Mannheim/tesseract/wiki
+   - Lub użyj dołączonego instalatora: `tesseract-ocr-w64-setup-5.5.0.20241111.exe`
+   - Dodaj do PATH: `C:\Program Files\Tesseract-OCR`
+
+4. **Zainstaluj Poppler**
+   - Pobierz z: https://github.com/oschwartz10612/poppler-windows/releases/
+   - Rozpakuj do `C:\poppler`
+   - Dodaj do PATH: `C:\poppler\Library\bin`
+
+### Użycie
+
+#### Pojedyncza faktura:
+```bash
+python app/main.py
+```
+
+#### Przetwarzanie wsadowe:
+```bash
+python konwertuj_faktury.py
+```
+
+#### GUI (w rozwoju):
+```bash
 python gui_konwerter.py
-
-# Lub batch
-uruchom_konwerter.bat
-
-# Lub bezpośrednio
-python app\main.py
-```
-**Rezultat:** Osobny plik XML dla każdego PDF
-
-## 📁 STRUKTURA FOLDERÓW
-
-```
-C:\pdf-to-xml-app\
-├── input\                      # ← Tutaj umieść faktury PDF
-├── output\                     # ← Tutaj pojawią się pliki XML
-│   └── wszystkie_faktury.xml   # ← Zbiorczy XML (tryb 1)
-├── app\                        # Kod aplikacji
-│   ├── main_multi.py          # NOWY - wszystkie faktury → jeden XML
-│   └── main.py                # Osobne XML dla każdej faktury
-├── konwertuj_do_jednego_xml.py # NOWY - prosty skrypt
-├── uruchom_jeden_xml.bat       # NOWY - batch dla Windows
-└── skrypty_testowe\            # Skrypty testowe
 ```
 
-## 📋 JAK UŻYWAĆ
+## 📁 Struktura projektu
 
-### Tryb 1: Wszystkie faktury w jednym XML (ZALECANY)
-1. **Umieść faktury PDF** w folderze `input\`
-2. **Uruchom:** `python konwertuj_do_jednego_xml.py`
-3. **Odbierz plik:** `output\wszystkie_faktury.xml`
+```
+pdf-to-xml-app/
+├── app/                      # Główna aplikacja
+│   ├── parsers/             # Parsery różnych typów faktur
+│   │   ├── universal_parser_v2.py  # Główny parser (ulepszony)
+│   │   └── ...
+│   ├── comarch_mapper.py    # Mapowanie do formatu Comarch
+│   ├── pdf_processor.py     # Przetwarzanie PDF i OCR
+│   ├── xml_generator.py     # Generowanie XML
+│   └── main.py              # Główny punkt wejścia
+├── input/                   # Katalog na faktury PDF
+├── output/                  # Wygenerowane pliki XML
+├── skrypty_testowe/        # Skrypty testowe i diagnostyczne
+├── wzór_xml/               # Wzorce XML dla Comarch Optima
+└── requirements.txt        # Zależności Python
+```
 
-### Tryb 2: Osobny XML dla każdej faktury
-1. **Umieść faktury PDF** w folderze `input\`
-2. **Uruchom:** `python gui_konwerter.py`
-3. **Odbierz pliki:** osobne XML w `output\`
+## 🔧 Konfiguracja
 
-## ✅ FUNKCJONALNOŚCI
+Edytuj plik `config.ini`:
+```ini
+[settings]
+ocr_lang=pol
+xml_template_path=wzór_xml/plik od ksiegowej wzór zaimportowanych faktur.xml
+```
 
-- ✅ **NOWE:** Generowanie jednego XML ze wszystkich faktur
-- ✅ **NOWE:** Podsumowanie finansowe wszystkich faktur
-- ✅ Automatyczna ekstrakcja danych z PDF (83% skuteczności)
-- ✅ Rozpoznawanie sprzedawcy i nabywcy
-- ✅ Parsowanie pozycji faktury
-- ✅ Obliczanie sum i VAT
-- ✅ Format zgodny z Comarch Optima / JPK
-- ✅ Obsługa polskich znaków (UTF-8)
-- ✅ Interfejs graficzny GUI
-- ✅ Przetwarzanie wsadowe
+## 📝 Ostatnie poprawki (styczeń 2025)
 
-## 🧪 TESTOWANIE
+### ✅ Rozwiązane problemy:
+1. **Nazwy sprzedawców** - poprawione rozpoznawanie, gdy parser zwracał tylko ":"
+2. **Błędne kwoty** - usunięte domyślne wartości 10000, lepsze parsowanie polskiej notacji
+3. **Pozycje "None"** - automatyczne filtrowanie pustych pozycji
 
+### 🔄 Wprowadzone ulepszenia:
+- Inteligentniejsze wykrywanie sekcji sprzedawcy/nabywcy
+- Obsługa różnych formatów kwot (1 234,56 / 1234.56)
+- Automatyczna walidacja i korekcja danych
+- Lepsza obsługa błędów OCR
+
+## 🧪 Testowanie
+
+Uruchom testy jednostkowe:
 ```bash
-# Test nowego systemu (jeden XML)
-python skrypty_testowe\test_single_xml.py
-
-# Diagnostyka
-python skrypty_testowe\diagnoza_systemu.py
-
-# Test przetwarzania wsadowego
-python skrypty_testowe\test_batch_processing.py
+python skrypty_testowe/test_parser_fixes_part1.py
 ```
 
-## 📊 PRZYKŁAD WYNIKU (JEDEN XML)
-
-```xml
-<?xml version='1.0' encoding='UTF-8'?>
-<JPK>
-  <Naglowek>
-    <KodFormularza>JPK_FA</KodFormularza>
-    <DataWytworzeniaJPK>2025-09-24</DataWytworzeniaJPK>
-  </Naglowek>
-  <Podmiot>
-    <NIP>6751781780</NIP>
-    <PelnaNazwa>2VISION SPÓŁKA Z O.O.</PelnaNazwa>
-  </Podmiot>
-  <Faktury>
-    <FakturaZakup>
-      <LpFaktury>1</LpFaktury>
-      <NrFaktury>11/07/2025</NrFaktury>
-      <!-- dane faktury 1 -->
-    </FakturaZakup>
-    <FakturaZakup>
-      <LpFaktury>2</LpFaktury>
-      <NrFaktury>FS_4447_08_2025</NrFaktury>
-      <!-- dane faktury 2 -->
-    </FakturaZakup>
-    <!-- kolejne faktury -->
-  </Faktury>
-  <Podsumowanie>
-    <LiczbaFaktur>7</LiczbaFaktur>
-    <SumaNetto>5432.10</SumaNetto>
-    <SumaVAT>1249.38</SumaVAT>
-    <SumaBrutto>6681.48</SumaBrutto>
-  </Podsumowanie>
-</JPK>
-```
-
-## 🔧 ROZWIĄZYWANIE PROBLEMÓW
-
-### Błąd: "ModuleNotFoundError"
+Test pełnego systemu:
 ```bash
-pip install pdfplumber lxml python-dateutil
+python skrypty_testowe/test_full_system.py
 ```
 
-### Błąd: "Brak plików PDF"
-Upewnij się, że faktury są w: `C:\pdf-to-xml-app\input\`
+## 📊 Wspierane formaty faktur
 
-### Niepełne dane w XML
-Parser ma 83% skuteczności. Niektóre faktury mogą wymagać ręcznej korekty.
+- ✅ Faktury standardowe (FV)
+- ✅ Faktury zakupu (FZ) 
+- ✅ Faktury korygujące
+- ✅ Różni dostawcy (uniwersalny parser)
 
-## 📝 UWAGI
+## 🤝 Współpraca
 
-- System automatycznie przypisuje nabywcę jako **2VISION Sp. z o.o.**
-- Domyślna stawka VAT to **23%** (jeśli nie rozpoznano)
-- Pliki XML są zapisywane w kodowaniu **UTF-8-SIG**
-- **NOWE:** Tryb zbiorczy sumuje wszystkie faktury
+1. Fork repozytorium
+2. Stwórz branch (`git checkout -b feature/AmazingFeature`)
+3. Commit zmiany (`git commit -m 'Add some AmazingFeature'`)
+4. Push do branch (`git push origin feature/AmazingFeature`)
+5. Otwórz Pull Request
 
-## 🆘 POMOC
+## 📜 Licencja
 
-W przypadku problemów:
-1. Uruchom diagnostykę: `python skrypty_testowe\diagnoza_systemu.py`
-2. Sprawdź logi w konsoli
-3. Upewnij się, że PDF nie jest zeskanowanym obrazem
+Projekt na licencji MIT - zobacz plik [LICENSE](LICENSE) dla szczegółów.
 
----
-© 2025 PDF-to-XML Converter for Comarch Optima
-Wersja 2.0 - Obsługa wielu faktur w jednym XML
+## 👥 Autorzy
+
+- **2Vision Sp. z o.o.** - główny rozwój
+
+## 🙏 Podziękowania
+
+- Tesseract OCR za świetne narzędzie OCR
+- Poppler za konwersję PDF
+- Comarch za dokumentację formatu XML
+
+## 📞 Kontakt
+
+W razie pytań lub problemów:
+- Otwórz Issue na GitHub
+- Email: support@2vision.pl
+
+## 🔄 Status projektu
+
+**Aktywnie rozwijany** - ostatnia aktualizacja: styczeń 2025
+
+### TODO:
+- [ ] Ulepszone GUI
+- [ ] Wsparcie dla większej liczby formatów faktur
+- [ ] Automatyczne uczenie się nowych szablonów
+- [ ] API REST dla integracji
+- [ ] Dockeryzacja aplikacji

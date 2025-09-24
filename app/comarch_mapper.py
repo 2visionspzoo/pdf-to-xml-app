@@ -87,10 +87,22 @@ class ComarchMapper:
         else:
             comarch_data.items = self._create_single_item(invoice_data)
         
-        # Mapowanie sum
-        comarch_data.net_total = float(invoice_data.net_total or 0)
-        comarch_data.vat_total = float(invoice_data.vat_total or 0)
-        comarch_data.gross_total = float(invoice_data.gross_total or 0)
+        # Mapowanie sum - sprawdzenie wartości 10000
+        net = float(invoice_data.net_total or 0)
+        vat = float(invoice_data.vat_total or 0)
+        gross = float(invoice_data.gross_total or 0)
+        
+        # Jeśli wartości to 10000, spróbuj obliczyć z pozycji
+        if gross == 10000.0 and net == 0.0:
+            if comarch_data.items:
+                net = sum(item['net_value'] for item in comarch_data.items)
+                vat = sum(item['vat_amount'] for item in comarch_data.items)
+                gross = sum(item['gross_value'] for item in comarch_data.items)
+                logger.warning(f"Detected default value 10000.00, recalculated from items: net={net}, vat={vat}, gross={gross}")
+        
+        comarch_data.net_total = net
+        comarch_data.vat_total = vat
+        comarch_data.gross_total = gross
         
         # Podsumowanie VAT
         comarch_data.vat_summary = self._calculate_vat_summary(comarch_data.items)
@@ -105,11 +117,20 @@ class ComarchMapper:
     
     def _clean_company_name(self, name: Optional[str]) -> str:
         """Czyści nazwę firmy"""
-        if not name:
+        if not name or name.strip() in ['', ':', 'None', 'none', 'null', 'brak']:
             return "NIEZNANY DOSTAWCA"
+        
+        # Usuń nadmiarowe białe znaki
         name = re.sub(r'\s+', ' ', name).strip()
-        if name.upper() == name:
+        
+        # Jeśli nazwa zawiera tylko znaki specjalne, zwróć domyślną
+        if re.match(r'^[^a-zA-Z0-9ĄĆĘŁŃÓŚŹŻąćęłńóśźż]+$', name):
+            return "NIEZNANY DOSTAWCA"
+        
+        # Jeśli cała nazwa jest wielkimi literami, zamień na Title Case
+        if name.upper() == name and len(name) > 10:
             name = name.title()
+        
         return name
     
     def _format_date(self, date_str: Optional[str]) -> str:
@@ -145,7 +166,9 @@ class ComarchMapper:
         if nip:
             return f"K_{nip[:6]}"
         elif name:
-            code = ''.join(word[0] for word in name.split()[:3]).upper()
+            code = ''.join(word[0] for word in name.split()[:3] if word).upper()
+            if not code:
+                code = "NIEZNANY"
             return f"K_{code}"
         return "K_NIEZNANY"
     
@@ -178,21 +201,30 @@ class ComarchMapper:
         mapped_items = []
         
         for i, item in enumerate(items, 1):
+            # Filtruj pozycje z nazwą "None"
+            item_name = item.get('name') or item.get('description', '')
+            if not item_name or item_name.lower() in ['none', 'null', 'brak', '']:
+                continue
+                
             # Parsuj stawkę VAT - może być jako '23%', '23', lub liczba
             vat_rate_raw = item.get('vat_rate', 23)
             if isinstance(vat_rate_raw, str):
                 # Usuń znak % i konwertuj na int
-                vat_rate = int(vat_rate_raw.replace('%', '').strip())
+                vat_rate_str = vat_rate_raw.replace('%', '').strip()
+                vat_rate = int(vat_rate_str) if vat_rate_str.isdigit() else 23
             else:
                 vat_rate = int(vat_rate_raw)
             
-            # Poprawka dla nazwy pola
-            item_name = item.get('name') or item.get('description', f'Towar/Usługa {i}')
             unit_price = float(item.get('unit_price_net') or item.get('unit_price', 0))
             net_value = float(item.get('net_amount') or item.get('net_value', 0))
             
+            # Sprawdź czy wartość nie jest domyślna 10000
+            if net_value == 10000.0:
+                logger.warning(f"Detected default net value 10000.00 for item {i}, setting to 0")
+                net_value = 0.0
+            
             mapped_item = {
-                'lp': i,
+                'lp': len(mapped_items) + 1,  # Używamy aktualnej długości listy
                 'description': item_name,
                 'quantity': float(item.get('quantity', 1)),
                 'unit': item.get('unit', 'szt.'),
@@ -204,16 +236,20 @@ class ComarchMapper:
             }
             
             # Oblicz VAT i brutto
-            # Sprawdź czy są już dostępne wartości VAT i brutto z danych źródłowych
             vat_amount = float(item.get('vat_amount', 0))
             gross_amount = float(item.get('gross_amount', 0))
+            
+            # Sprawdź czy wartość brutto nie jest domyślna 10000
+            if gross_amount == 10000.0 and net_value == 0.0:
+                logger.warning(f"Detected default gross value 10000.00 for item {i}, recalculating")
+                gross_amount = 0.0
             
             # Jeśli VAT jest 0 ale brutto różne od netto, oblicz VAT
             if vat_amount == 0 and gross_amount > net_value:
                 vat_amount = gross_amount - net_value
             
             # Jeśli nadal brak wartości, oblicz standardowo
-            if vat_amount == 0 and vat_rate > 0:
+            if vat_amount == 0 and vat_rate > 0 and net_value > 0:
                 vat_decimal = vat_rate / 100
                 vat_amount = round(net_value * vat_decimal, 2)
             
@@ -233,12 +269,19 @@ class ComarchMapper:
         vat_value = float(invoice_data.vat_total or 0)
         gross_value = float(invoice_data.gross_total or 0)
         
+        # Sprawdź czy wartości nie są domyślne 10000
+        if gross_value == 10000.0 and net_value == 0.0:
+            logger.warning("Detected default values in single item, resetting to 0")
+            net_value = 0.0
+            vat_value = 0.0
+            gross_value = 0.0
+        
         vat_rate = 23
-        if net_value > 0:
+        if net_value > 0 and vat_value > 0:
             vat_rate = round((vat_value / net_value) * 100)
         
         description = "Zakup towaru/usługi"
-        if invoice_data.seller_name:
+        if invoice_data.seller_name and invoice_data.seller_name not in [':', 'None', '']:
             description = f"Faktura od {invoice_data.seller_name}"
         
         return [{
