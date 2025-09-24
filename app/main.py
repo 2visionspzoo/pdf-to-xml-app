@@ -17,64 +17,114 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def main():
-    """Główna funkcja aplikacji"""
-    # Parser argumentów
-    parser = argparse.ArgumentParser(description='Konwerter faktur PDF do XML')
-    parser.add_argument('--input', '-i', help='Ścieżka do pliku PDF', 
-                       default=r'C:\pdf-to-xml-app\input\faktura.pdf')
-    parser.add_argument('--output', '-o', help='Ścieżka do pliku XML',
-                       default=r'C:\pdf-to-xml-app\output\output.xml')
-    args = parser.parse_args()
-    
+def process_single_file(input_file, output_file, parser_type='universal'):
+    """Przetwarza pojedynczy plik PDF"""
     try:
-        # Ścieżki plików
-        input_file = args.input
-        output_file = args.output
-        
-        logger.info(f"Start przetwarzania PDF-to-XML")
-        logger.info(f"Plik wejściowy: {input_file}")
-        logger.info(f"Plik wyjściowy: {output_file}")
+        logger.info(f"Przetwarzanie: {Path(input_file).name}")
         
         # Sprawdzenie czy plik istnieje
         if not os.path.isfile(input_file):
             raise FileNotFoundError(f"Plik PDF nie istnieje: {input_file}")
         
         # Przetwarzanie PDF
-        logger.info("Ekstrakcja danych z PDF...")
-        processor = PDFProcessor()
+        processor = PDFProcessor(parser_type=parser_type)
         invoice_data = processor.extract_from_pdf(input_file)
         
         # Mapowanie danych do struktury Comarch
-        logger.info("Mapowanie danych do formatu Comarch...")
         mapper = ComarchMapper()
         comarch_data = mapper.map_invoice_data(invoice_data)
         
         # Generowanie XML
-        logger.info("Generowanie XML...")
         generator = XMLGenerator()
         xml_content = generator.generate_xml(comarch_data)
         
-        # Zapis XML
+        # Zapis XML z poprawnym kodowaniem
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, 'w', encoding='utf-8-sig') as f:  # utf-8-sig dla lepszej kompatybilności
             f.write(xml_content)
         
-        logger.info(f"Sukces! XML zapisany do: {output_file}")
+        logger.info(f"✅ Sukces! XML zapisany: {Path(output_file).name}")
         
-        # Wyświetl podsumowanie
-        logger.info("=== PODSUMOWANIE ===")
-        logger.info(f"Numer faktury: {comarch_data.invoice_number}")
-        logger.info(f"Sprzedawca: {comarch_data.seller_name}")
-        logger.info(f"NIP sprzedawcy: {comarch_data.seller_nip}")
-        logger.info(f"Kwota netto: {comarch_data.net_total:.2f} PLN")
-        logger.info(f"Kwota VAT: {comarch_data.vat_total:.2f} PLN")
-        logger.info(f"Kwota brutto: {comarch_data.gross_total:.2f} PLN")
-        
-        return 0
+        return True
         
     except Exception as e:
-        logger.error(f"Błąd podczas przetwarzania: {e}")
+        logger.error(f"❌ Błąd dla {Path(input_file).name}: {e}")
+        return False
+
+def process_batch(input_dir, output_dir, parser_type='universal'):
+    """Przetwarza wszystkie pliki PDF z katalogu"""
+    input_path = Path(input_dir)
+    output_path = Path(output_dir)
+    
+    # Tworzenie katalogu wyjściowego
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Znajdź wszystkie pliki PDF
+    pdf_files = list(input_path.glob("*.pdf"))
+    
+    if not pdf_files:
+        logger.warning(f"Brak plików PDF w katalogu: {input_dir}")
+        return 0
+    
+    logger.info(f"Znaleziono {len(pdf_files)} plików PDF do przetworzenia")
+    
+    successful = 0
+    failed = 0
+    
+    for pdf_file in pdf_files:
+        # Generuj nazwę pliku wyjściowego
+        output_file = output_path / (pdf_file.stem + ".xml")
+        
+        # Przetwórz plik
+        if process_single_file(str(pdf_file), str(output_file), parser_type):
+            successful += 1
+        else:
+            failed += 1
+    
+    # Podsumowanie
+    logger.info("=" * 50)
+    logger.info(f"PODSUMOWANIE:")
+    logger.info(f"✅ Przetworzone pomyślnie: {successful}")
+    logger.info(f"❌ Niepowodzenia: {failed}")
+    logger.info(f"📁 Pliki XML zapisane w: {output_dir}")
+    logger.info("=" * 50)
+    
+    return successful
+
+def main():
+    """Główna funkcja aplikacji"""
+    # Parser argumentów
+    parser = argparse.ArgumentParser(description='Konwerter faktur PDF do XML')
+    parser.add_argument('--input', '-i', help='Ścieżka do pliku PDF')
+    parser.add_argument('--output', '-o', help='Ścieżka do pliku XML')
+    parser.add_argument('--input-dir', help='Katalog z plikami PDF',
+                       default=r'C:\pdf-to-xml-app\input')
+    parser.add_argument('--output-dir', help='Katalog wyjściowy dla XML',
+                       default=r'C:\pdf-to-xml-app\output')
+    parser.add_argument('--parser', help='Parser do użycia (universal, atut, bolt)',
+                       default='universal')
+    parser.add_argument('--batch', action='store_true', 
+                       help='Przetwarzaj wszystkie pliki z katalogu input')
+    
+    args = parser.parse_args()
+    
+    try:
+        logger.info("Start przetwarzania PDF-to-XML")
+        
+        # Tryb pojedynczego pliku
+        if args.input and args.output:
+            logger.info("Tryb: pojedynczy plik")
+            success = process_single_file(args.input, args.output, args.parser)
+            return 0 if success else 1
+        
+        # Tryb wsadowy (domyślny lub z flagą --batch)
+        else:
+            logger.info("Tryb: przetwarzanie wsadowe")
+            count = process_batch(args.input_dir, args.output_dir, args.parser)
+            return 0 if count > 0 else 1
+            
+    except Exception as e:
+        logger.error(f"Krytyczny błąd: {e}")
         import traceback
         logger.error(traceback.format_exc())
         return 1

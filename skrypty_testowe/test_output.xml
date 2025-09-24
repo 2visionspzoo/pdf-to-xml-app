@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<JPK xmlns="http://jpk.mf.gov.pl/wzor/2022/02/17/02171/">
+  <Naglowek>
+    <KodFormularza>JPK_FA</KodFormularza>
+    <WariantFormularza>3</WariantFormularza>
+    <DataWytworzeniaJPK>2025-07-08</DataWytworzeniaJPK>
+  </Naglowek>
+  <Podmiot>
+    <NIP>6751781780</NIP>
+    <PelnaNazwa>2VISION SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ</PelnaNazwa>
+  </Podmiot>
+  <FakturaZakup>
+    <TypDokumentu>FZ</TypDokumentu>
+    <NrFaktury>11/07/2025</NrFaktury>
+    <DataWystawienia>2025-07-08</DataWystawienia>
+    <DataWplywu>2025-07-08</DataWplywu>
+    <NazwaDostawcy>NIEZNANY DOSTAWCA</NazwaDostawcy>
+    <NrIdDostawcy></NrIdDostawcy>
+    <K_43>427.00</K_43>
+    <K_44>0.00</K_44>
+    <K_45>525.21</K_45>
+    <FakturaZakupWiersz>
+      <Lp>1</Lp>
+      <NazwaTowaru>Wyklejenie samochodu IVECO</NazwaTowaru>
+      <Ilosc>1.0000</Ilosc>
+      <CenaJedn>427.00</CenaJedn>
+      <WartoscNetto>427.00</WartoscNetto>
+      <StawkaVAT>23%</StawkaVAT>
+      <KwotaVAT>98.21</KwotaVAT>
+    </FakturaZakupWiersz>
+  </FakturaZakup>
+</JPK>

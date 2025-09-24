@@ -178,22 +178,50 @@ class ComarchMapper:
         mapped_items = []
         
         for i, item in enumerate(items, 1):
+            # Parsuj stawkę VAT - może być jako '23%', '23', lub liczba
+            vat_rate_raw = item.get('vat_rate', 23)
+            if isinstance(vat_rate_raw, str):
+                # Usuń znak % i konwertuj na int
+                vat_rate = int(vat_rate_raw.replace('%', '').strip())
+            else:
+                vat_rate = int(vat_rate_raw)
+            
+            # Poprawka dla nazwy pola
+            item_name = item.get('name') or item.get('description', f'Towar/Usługa {i}')
+            unit_price = float(item.get('unit_price_net') or item.get('unit_price', 0))
+            net_value = float(item.get('net_amount') or item.get('net_value', 0))
+            
             mapped_item = {
                 'lp': i,
-                'description': item.get('description', f'Towar/Usługa {i}'),
+                'description': item_name,
                 'quantity': float(item.get('quantity', 1)),
                 'unit': item.get('unit', 'szt.'),
-                'unit_price': float(item.get('unit_price', 0)),
-                'net_value': float(item.get('net_value', 0)),
-                'vat_rate': int(item.get('vat_rate', 23)),
+                'unit_price': unit_price,
+                'net_value': net_value,
+                'vat_rate': vat_rate,
                 'vat_amount': 0,
                 'gross_value': 0
             }
             
             # Oblicz VAT i brutto
-            vat_decimal = mapped_item['vat_rate'] / 100
-            mapped_item['vat_amount'] = round(mapped_item['net_value'] * vat_decimal, 2)
-            mapped_item['gross_value'] = round(mapped_item['net_value'] + mapped_item['vat_amount'], 2)
+            # Sprawdź czy są już dostępne wartości VAT i brutto z danych źródłowych
+            vat_amount = float(item.get('vat_amount', 0))
+            gross_amount = float(item.get('gross_amount', 0))
+            
+            # Jeśli VAT jest 0 ale brutto różne od netto, oblicz VAT
+            if vat_amount == 0 and gross_amount > net_value:
+                vat_amount = gross_amount - net_value
+            
+            # Jeśli nadal brak wartości, oblicz standardowo
+            if vat_amount == 0 and vat_rate > 0:
+                vat_decimal = vat_rate / 100
+                vat_amount = round(net_value * vat_decimal, 2)
+            
+            if gross_amount == 0:
+                gross_amount = round(net_value + vat_amount, 2)
+            
+            mapped_item['vat_amount'] = vat_amount
+            mapped_item['gross_value'] = gross_amount
             
             mapped_items.append(mapped_item)
         

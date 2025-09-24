@@ -47,7 +47,8 @@ class InvoiceData:
     payment_date: Optional[str] = None
 
 class PDFProcessor:
-    def __init__(self):
+    def __init__(self, parser_type: str = 'auto'):
+        self.parser_type = parser_type
         # Rozpoznawanie typu faktury
         self.invoice_types = {
             'ATUT': ['atut', 'comarch'],
@@ -139,28 +140,40 @@ class PDFProcessor:
                 logger.info("Używam OCR do ekstrakcji...")
                 text = self._extract_with_ocr(pdf_path)
             
-            # Rozpoznaj typ faktury
-            detector = InvoiceDetector()
-            invoice_type = detector.detect_type(text)
-            confidence = detector.get_confidence_score(text, invoice_type)
-            
-            logger.info(f"Wykryto typ faktury: {invoice_type.value} (pewność: {confidence:.2f})")
-            
-            # Wybierz odpowiedni parser
-            if invoice_type == InvoiceType.ATUT:
-                parser = ATUTParser()
-            elif invoice_type == InvoiceType.BOLT:
-                parser = BoltParser()
-            else:
-                # Użyj uniwersalnego parsera dla pozostałych typów
+            # Wybierz parser według typu
+            if self.parser_type == 'universal':
                 parser = UniversalParser()
+                logger.info("Używam uniwersalnego parsera")
+            elif self.parser_type == 'atut':
+                parser = ATUTParser()
+                logger.info("Używam parsera ATUT")
+            elif self.parser_type == 'bolt':
+                parser = BoltParser()
+                logger.info("Używam parsera Bolt")
+            else:
+                # Auto - rozpoznaj typ faktury
+                detector = InvoiceDetector()
+                invoice_type = detector.detect_type(text)
+                confidence = detector.get_confidence_score(text, invoice_type)
+                
+                logger.info(f"Wykryto typ faktury: {invoice_type.value} (pewność: {confidence:.2f})")
+                
+                # Wybierz odpowiedni parser
+                if invoice_type == InvoiceType.ATUT:
+                    parser = ATUTParser()
+                elif invoice_type == InvoiceType.BOLT:
+                    parser = BoltParser()
+                else:
+                    # Użyj uniwersalnego parsera dla pozostałych typów
+                    parser = UniversalParser()
             
             # Parsuj fakturę
             invoice_data = parser.parse(text, all_tables)
             
-            # Dodaj informacje o typie faktury
-            invoice_data['invoice_type'] = invoice_type.value
-            invoice_data['confidence'] = confidence
+            # Dodaj informacje o typie faktury jeśli rozpoznano automatycznie
+            if self.parser_type == 'auto':
+                invoice_data['invoice_type'] = invoice_type.value
+                invoice_data['confidence'] = confidence
             
             # Konwersja do InvoiceData jeśli potrzebna dla kompatybilności
             return self._convert_to_invoice_data(invoice_data)

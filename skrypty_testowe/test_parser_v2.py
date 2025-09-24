@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.parsers.universal_parser_v2 import UniversalParserV2
+from app.parsers.universal_parser_v2 import UniversalParser
 from app.pdf_processor import PDFProcessor
 import json
 
@@ -33,7 +33,7 @@ def test_improved_parser():
     print(f"✅ Znaleziono {len(tables)} tabel\n")
     
     # Test parsera
-    parser = UniversalParserV2()
+    parser = UniversalParser()
     result = parser.parse(text, tables)
     
     # Wyświetl wyniki

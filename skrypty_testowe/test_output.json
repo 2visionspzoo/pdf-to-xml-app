@@ -1,0 +1,49 @@
+{
+  "invoice_number": "11/07/2025",
+  "invoice_date": "2025-07-08",
+  "sale_date": "2025-07-08",
+  "payment_date": "2025-07-15",
+  "payment_method": "przelew",
+  "seller": {
+    "name": "",
+    "nip": "",
+    "address": "",
+    "city": "",
+    "postal_code": "",
+    "country": "Polska"
+  },
+  "buyer": {
+    "name": "KRZYSZTOF OLSZYŃSKI 2Vision Sp. z o. o.",
+    "nip": "9451861944",
+    "address": "Mały Płaszów 14/3 ul. Dąbska 20A/17",
+    "city": "Kraków",
+    "postal_code": "31-572",
+    "country": "Polska"
+  },
+  "items": [
+    {
+      "lp": 1,
+      "name": "Wyklejenie samochodu IVECO",
+      "pkwiu": null,
+      "quantity": "1",
+      "unit": "szt.",
+      "unit_price_net": "427.00",
+      "net_amount": "427.00",
+      "vat_rate": "23%",
+      "vat_amount": "0",
+      "gross_amount": "525.21"
+    }
+  ],
+  "summary": {
+    "net_total": "427.00",
+    "vat_total": "0.00",
+    "gross_total": "525.21",
+    "vat_breakdown": {
+      "23%": {
+        "net": "427.00",
+        "vat": "0",
+        "gross": "525.21"
+      }
+    }
+  }
+}
