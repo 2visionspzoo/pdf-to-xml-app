@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Dokumenty>
+  <Dokument Typ="ZAKUP">
+    <Naglowek>
+      <Numer>TEST/001/2025</Numer>
+      <DataWystawienia>2025-09-24</DataWystawienia>
+      <DataSprzedazy>2025-09-24</DataSprzedazy>
+      <Kontrahent>
+        <NIP>1234567890</NIP>
+        <Nazwa>Test Company Sp. z o.o.</Nazwa>
+        <Adres>brak danych adresowych</Adres>
+      </Kontrahent>
+      <FormaPlatnosci>przelew</FormaPlatnosci>
+      <TerminPlatnosci>2025-10-01</TerminPlatnosci>
+    </Naglowek>
+    <Pozycje>
+      <Pozycja>
+        <Opis>Usługa testowa</Opis>
+        <Ilosc>1.0</Ilosc>
+        <Jednostka>szt.</Jednostka>
+        <CenaNetto>100.00</CenaNetto>
+        <WartoscNetto>100.00</WartoscNetto>
+        <StawkaVAT>23</StawkaVAT>
+        <KwotaVAT>23.00</KwotaVAT>
+        <WartoscBrutto>123.00</WartoscBrutto>
+        <KontoKsiegowe>402-13</KontoKsiegowe>
+      </Pozycja>
+    </Pozycje>
+    <RejestrVAT>
+      <Typ>Rejestr zakupu</Typ>
+      <StawkaVAT>23</StawkaVAT>
+      <Netto>100.00</Netto>
+      <VAT>23.00</VAT>
+      <Brutto>123.00</Brutto>
+      <Odliczalny>Tak</Odliczalny>
+    </RejestrVAT>
+    <Platnosc>
+      <Kwota>123.00</Kwota>
+      <Waluta>PLN</Waluta>
+      <DataPlatnosci>2025-10-01</DataPlatnosci>
+      <Status>rozchód</Status>
+    </Platnosc>
+  </Dokument>
+</Dokumenty>

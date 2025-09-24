@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Generator XML dla wielu faktur w jednym pliku
+Generator XML dla wielu faktur w jednym pliku - format Comarch ERP Optima
 """
 from lxml import etree
 import logging
@@ -10,78 +10,175 @@ logger = logging.getLogger(__name__)
 
 class XMLGeneratorMulti:
     def generate_multi_invoice_xml(self, invoice_list) -> str:
-        """Generuje XML z wieloma fakturami zgodny z formatem JPK"""
+        """Generuje XML z wieloma fakturami zgodny z formatem Comarch ERP Optima"""
         
-        # Tworzenie głównego elementu
-        root = etree.Element("JPK", nsmap={
-            None: "http://jpk.mf.gov.pl/wzor/2022/02/17/02171/"
-        })
+        # Tworzenie głównego elementu bez namespace - czysty XML
+        root = etree.Element("Dokumenty")
         
-        # Nagłówek
-        naglowek = etree.SubElement(root, "Naglowek")
-        etree.SubElement(naglowek, "KodFormularza").text = "JPK_FA"
-        etree.SubElement(naglowek, "WariantFormularza").text = "3"
-        etree.SubElement(naglowek, "DataWytworzeniaJPK").text = datetime.now().strftime('%Y-%m-%d')
-        
-        # Podmiot (zakładamy, że zawsze ten sam - 2VISION)
-        if invoice_list:
-            first_invoice = invoice_list[0]
-            podmiot = etree.SubElement(root, "Podmiot")
-            etree.SubElement(podmiot, "NIP").text = first_invoice.buyer_nip
-            etree.SubElement(podmiot, "PelnaNazwa").text = first_invoice.buyer_name
-        
-        # Kontener na wszystkie faktury
-        faktury_container = etree.SubElement(root, "Faktury")
-        
-        # Dodaj każdą fakturę
+        # Dodaj każdą fakturę jako osobny dokument
         for idx, comarch_data in enumerate(invoice_list, 1):
-            # Faktura zakupu
-            faktura = etree.SubElement(faktury_container, "FakturaZakup")
-            etree.SubElement(faktura, "LpFaktury").text = str(idx)
-            etree.SubElement(faktura, "TypDokumentu").text = "FZ"
-            etree.SubElement(faktura, "NrFaktury").text = comarch_data.invoice_number
-            etree.SubElement(faktura, "DataWystawienia").text = comarch_data.issue_date
-            etree.SubElement(faktura, "DataWplywu").text = comarch_data.issue_date
+            # Tworzenie dokumentu typu ZAKUP
+            dokument = etree.SubElement(root, "Dokument")
+            dokument.set("Typ", "ZAKUP")
             
-            # Sprzedawca
-            etree.SubElement(faktura, "NazwaDostawcy").text = comarch_data.seller_name
-            etree.SubElement(faktura, "NrIdDostawcy").text = comarch_data.seller_nip
+            # Nagłówek
+            naglowek = etree.SubElement(dokument, "Naglowek")
+            etree.SubElement(naglowek, "Numer").text = comarch_data.invoice_number
+            etree.SubElement(naglowek, "DataWystawienia").text = comarch_data.issue_date
+            etree.SubElement(naglowek, "DataSprzedazy").text = comarch_data.sale_date or comarch_data.issue_date
             
-            # Kwoty
-            etree.SubElement(faktura, "K_43").text = f"{comarch_data.net_total:.2f}"
-            etree.SubElement(faktura, "K_44").text = f"{comarch_data.vat_total:.2f}"
-            etree.SubElement(faktura, "K_45").text = f"{comarch_data.gross_total:.2f}"
+            # Opcjonalne: Data księgowania (jeśli inna niż wystawienia)
+            etree.SubElement(naglowek, "DataKsiegowania").text = datetime.now().strftime('%Y-%m-%d')
+            
+            # Kontrahent (sprzedawca)
+            kontrahent = etree.SubElement(naglowek, "Kontrahent")
+            
+            # NIP - upewnij się że jest wartość
+            seller_nip = comarch_data.seller_nip if comarch_data.seller_nip else ""
+            etree.SubElement(kontrahent, "NIP").text = seller_nip
+            
+            # Nazwa sprzedawcy
+            seller_name = comarch_data.seller_name if comarch_data.seller_name else "NIEZNANY DOSTAWCA"
+            etree.SubElement(kontrahent, "Nazwa").text = seller_name
+            
+            # Adres sprzedawcy
+            if comarch_data.seller_address:
+                adres_parts = []
+                if comarch_data.seller_address.get('street'):
+                    street = comarch_data.seller_address.get('street')
+                    building = comarch_data.seller_address.get('building', '')
+                    adres_parts.append(f"{street} {building}".strip())
+                if comarch_data.seller_address.get('city'):
+                    city = comarch_data.seller_address.get('city')
+                    postal = comarch_data.seller_address.get('postal_code')
+                    if postal:
+                        adres_parts.append(f"{postal} {city}")
+                    else:
+                        adres_parts.append(city)
+                adres_text = ", ".join(adres_parts) if adres_parts else "brak danych adresowych"
+            else:
+                adres_text = "brak danych adresowych"
+            
+            etree.SubElement(kontrahent, "Adres").text = adres_text
+            
+            # Kod kraju (opcjonalny)
+            etree.SubElement(kontrahent, "KodKraju").text = "PL"
+            
+            # Forma płatności i termin
+            etree.SubElement(naglowek, "FormaPlatnosci").text = comarch_data.payment_method
+            etree.SubElement(naglowek, "TerminPlatnosci").text = comarch_data.payment_date
+            
+            # Waluta - sprawdź czy mamy informację o walucie
+            waluta = "PLN"  # domyślna waluta
+            etree.SubElement(naglowek, "Waluta").text = waluta
             
             # Pozycje faktury
+            pozycje = etree.SubElement(dokument, "Pozycje")
+            
             for item in comarch_data.items:
-                wiersz = etree.SubElement(faktura, "FakturaZakupWiersz")
-                etree.SubElement(wiersz, "Lp").text = str(item['lp'])
-                etree.SubElement(wiersz, "NazwaTowaru").text = item['description']
-                etree.SubElement(wiersz, "Ilosc").text = f"{item['quantity']:.4f}"
-                etree.SubElement(wiersz, "CenaJedn").text = f"{item['unit_price']:.2f}"
-                etree.SubElement(wiersz, "WartoscNetto").text = f"{item['net_value']:.2f}"
-                etree.SubElement(wiersz, "StawkaVAT").text = f"{item['vat_rate']}%"
-                etree.SubElement(wiersz, "KwotaVAT").text = f"{item['vat_amount']:.2f}"
+                pozycja = etree.SubElement(pozycje, "Pozycja")
+                
+                # Opis pozycji
+                etree.SubElement(pozycja, "Opis").text = item['description']
+                
+                # Ilość
+                etree.SubElement(pozycja, "Ilosc").text = str(item['quantity'])
+                
+                # Jednostka
+                jednostka = item.get('unit', 'szt.')
+                etree.SubElement(pozycja, "Jednostka").text = jednostka
+                
+                # Cena netto jednostkowa
+                etree.SubElement(pozycja, "CenaNetto").text = f"{item['unit_price']:.2f}"
+                
+                # Wartość netto
+                etree.SubElement(pozycja, "WartoscNetto").text = f"{item['net_value']:.2f}"
+                
+                # Stawka VAT (bez znaku %)
+                etree.SubElement(pozycja, "StawkaVAT").text = str(item['vat_rate'])
+                
+                # Kwota VAT
+                etree.SubElement(pozycja, "KwotaVAT").text = f"{item['vat_amount']:.2f}"
+                
+                # Wartość brutto
+                etree.SubElement(pozycja, "WartoscBrutto").text = f"{item['gross_value']:.2f}"
+                
+                # Kategoria księgowa - można dostosować według typu
+                kategoria = "402-13"  # domyślnie dla usług
+                if 'towar' in item['description'].lower():
+                    kategoria = "401-05"  # dla towarów
+                etree.SubElement(pozycja, "KategoriaKsiegowa").text = kategoria
+                
+                # Konto księgowe
+                etree.SubElement(pozycja, "KontoKsiegowe").text = kategoria
+            
+            # Rejestr VAT
+            rejestr_vat = etree.SubElement(dokument, "RejestrVAT")
+            etree.SubElement(rejestr_vat, "Typ").text = "Rejestr zakupu"
+            
+            # Jeśli mamy podsumowanie VAT według stawek
+            if comarch_data.vat_summary:
+                # Dla każdej stawki VAT dodaj osobny wpis
+                for rate_str, amounts in comarch_data.vat_summary.items():
+                    # W podstawowej strukturze używamy tylko jednej głównej stawki
+                    # Dla pełnej zgodności można by utworzyć osobne elementy dla każdej stawki
+                    rate = rate_str.replace('%', '')
+                    etree.SubElement(rejestr_vat, "StawkaVAT").text = rate
+                    etree.SubElement(rejestr_vat, "Netto").text = f"{amounts['net']:.2f}"
+                    etree.SubElement(rejestr_vat, "VAT").text = f"{amounts['vat']:.2f}"
+                    etree.SubElement(rejestr_vat, "Brutto").text = f"{amounts['gross']:.2f}"
+                    break  # Użyjemy tylko pierwszej stawki jako głównej
+            else:
+                # Jeśli brak podsumowania, użyj sum całkowitych
+                if comarch_data.net_total > 0 and comarch_data.vat_total > 0:
+                    stawka_vat = round((comarch_data.vat_total / comarch_data.net_total) * 100)
+                else:
+                    stawka_vat = 23
+                    
+                etree.SubElement(rejestr_vat, "StawkaVAT").text = str(stawka_vat)
+                etree.SubElement(rejestr_vat, "Netto").text = f"{comarch_data.net_total:.2f}"
+                etree.SubElement(rejestr_vat, "VAT").text = f"{comarch_data.vat_total:.2f}"
+            
+            # Brutto - oblicz jeśli nie ma
+            brutto = comarch_data.gross_total
+            if brutto == 0:
+                brutto = comarch_data.net_total + comarch_data.vat_total
+            etree.SubElement(rejestr_vat, "Brutto").text = f"{brutto:.2f}"
+            
+            # VAT odliczalny
+            etree.SubElement(rejestr_vat, "Odliczalny").text = "Tak"
+            
+            # Sekcja płatności
+            platnosc = etree.SubElement(dokument, "Platnosc")
+            etree.SubElement(platnosc, "Kwota").text = f"{brutto:.2f}"
+            etree.SubElement(platnosc, "Waluta").text = waluta
+            etree.SubElement(platnosc, "DataPlatnosci").text = comarch_data.payment_date
+            etree.SubElement(platnosc, "Status").text = "rozchód"
+            
+            # Opcjonalne: Rachunek bankowy
+            # etree.SubElement(platnosc, "RachunekBankowy").text = "PL12345678901234567890123456"
+            
+            # Opcjonalne dodatkowe elementy
+            # Notatki
+            if hasattr(comarch_data, 'notes') and comarch_data.notes:
+                etree.SubElement(dokument, "Notatki").text = comarch_data.notes
+            
+            # Załączniki
+            if hasattr(comarch_data, 'attachments') and comarch_data.attachments:
+                zalaczniki = etree.SubElement(dokument, "Zalaczniki")
+                for attachment in comarch_data.attachments:
+                    etree.SubElement(zalaczniki, "Zalacznik").text = attachment
+            
+            # Wersja schematu
+            etree.SubElement(dokument, "Wersja").text = "2.00"
         
-        # Podsumowanie
-        podsumowanie = etree.SubElement(root, "Podsumowanie")
-        
-        # Oblicz sumy ze wszystkich faktur
-        total_net = sum(inv.net_total for inv in invoice_list)
-        total_vat = sum(inv.vat_total for inv in invoice_list)
-        total_gross = sum(inv.gross_total for inv in invoice_list)
-        
-        etree.SubElement(podsumowanie, "LiczbaFaktur").text = str(len(invoice_list))
-        etree.SubElement(podsumowanie, "SumaNetto").text = f"{total_net:.2f}"
-        etree.SubElement(podsumowanie, "SumaVAT").text = f"{total_vat:.2f}"
-        etree.SubElement(podsumowanie, "SumaBrutto").text = f"{total_gross:.2f}"
-        
-        # Konwersja do stringa z pretty print
+        # Konwersja do stringa z pretty print i prawidłowym kodowaniem UTF-8
         xml_str = etree.tostring(
             root, 
             pretty_print=True, 
             xml_declaration=True,
             encoding='UTF-8'
-        ).decode('utf-8')
+        )
         
-        return xml_str
+        # Dekoduj do stringa UTF-8
+        return xml_str.decode('utf-8')

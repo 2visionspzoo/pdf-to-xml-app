@@ -17,7 +17,7 @@ from config import get_config
 from invoice_detector import InvoiceDetector, InvoiceType
 from parsers.atut_parser import ATUTParser
 from parsers.bolt_parser import BoltParser
-from parsers.universal_parser import UniversalParser
+from parsers.universal_parser_v6 import UniversalParser
 
 # Konfiguracja Tesseract
 config = get_config()
@@ -49,6 +49,13 @@ class InvoiceData:
 class PDFProcessor:
     def __init__(self, parser_type: str = 'auto'):
         self.parser_type = parser_type
+        # Minimalne wymagania dla uznania strony za fakturę
+        self.invoice_keywords = [
+            'faktura', 'invoice', 'vat', 'sprzedawca', 'nabywca', 
+            'nip', 'razem', 'suma', 'brutto', 'netto',
+            'do zapłaty', 'wartość', 'kwota', 'pozycje'
+        ]
+        self.min_keywords_count = 3  # Minimalna liczba słów kluczowych
         # Rozpoznawanie typu faktury
         self.invoice_types = {
             'ATUT': ['atut', 'comarch'],
@@ -116,6 +123,153 @@ class PDFProcessor:
                 r'Data\s*płatności\s*[:.]?\s*(\d{1,2}[.\-/]\d{1,2}[.\-/]\d{4})'
             ]
         }
+    
+    def is_invoice_page(self, text: str) -> bool:
+        """Sprawdza czy strona zawiera fakturę"""
+        if not text or len(text.strip()) < 50:
+            return False
+        
+        text_lower = text.lower()
+        found_keywords = 0
+        
+        # Sprawdź słowa kluczowe
+        for keyword in self.invoice_keywords:
+            if keyword in text_lower:
+                found_keywords += 1
+                if found_keywords >= self.min_keywords_count:
+                    return True
+        
+        # Dodatkowe sprawdzenie - czy jest numer faktury
+        invoice_patterns = [
+            r'faktura[\s\w]*nr', 
+            r'invoice[\s\w]*no',
+            r'f[avs][\s/\-]\d+',
+            r'\d+[/\-]\d+[/\-]\d{4}'
+        ]
+        
+        for pattern in invoice_patterns:
+            if re.search(pattern, text_lower):
+                return True
+        
+        return found_keywords >= self.min_keywords_count
+    
+    def extract_from_pdf_multipage(self, pdf_path: str) -> List[Dict]:
+        """Ekstraktuje faktury z wielostronicowego PDF - każda strona osobno"""
+        invoices = []
+        pdf_name = os.path.basename(pdf_path).rsplit('.', 1)[0]
+        
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                total_pages = len(pdf.pages)
+                logger.info(f"PDF {pdf_name} ma {total_pages} stron")
+                
+                for page_num, page in enumerate(pdf.pages, 1):
+                    # Ekstraktuj tekst i tabele ze strony
+                    page_text = page.extract_text() or ""
+                    page_tables = page.extract_tables() or []
+                    
+                    # Jeśli brak tekstu, użyj OCR
+                    if len(page_text.strip()) < 100:
+                        logger.info(f"Strona {page_num}/{total_pages} - używam OCR")
+                        page_text = self._extract_page_with_ocr(pdf_path, page_num)
+                    
+                    # Sprawdź czy strona zawiera fakturę
+                    if not self.is_invoice_page(page_text):
+                        logger.info(f"Strona {page_num}/{total_pages} - nie jest fakturą, pomijam")
+                        continue
+                    
+                    logger.info(f"Strona {page_num}/{total_pages} - znaleziono fakturę, parsowanie...")
+                    
+                    # Parsuj fakturę
+                    invoice_data = self._parse_single_invoice(page_text, page_tables)
+                    
+                    # Dodaj informacje o źródle
+                    invoice_data['source_file'] = pdf_name
+                    invoice_data['source_page'] = page_num
+                    
+                    # Jeśli brak numeru faktury, generuj na podstawie pliku i strony
+                    if not invoice_data.get('invoice_number'):
+                        invoice_data['invoice_number'] = f"{pdf_name}_strona_{page_num}"
+                    
+                    # Dodaj do listy jeśli znaleziono istotne dane
+                    if self._is_valid_invoice(invoice_data):
+                        invoices.append(invoice_data)
+                        logger.info(f"✅ Dodano fakturę: {invoice_data['invoice_number']}")
+                    else:
+                        logger.warning(f"⚠️ Strona {page_num} - brak wystarczających danych faktury")
+            
+            return invoices
+            
+        except Exception as e:
+            logger.error(f"Błąd przetwarzania wielostronicowego PDF {pdf_path}: {e}")
+            return []
+    
+    def _extract_page_with_ocr(self, pdf_path: str, page_num: int) -> str:
+        """OCR dla konkretnej strony PDF"""
+        try:
+            kwargs = {'dpi': config.ocr_dpi, 'first_page': page_num, 'last_page': page_num}
+            if config.poppler_path and os.path.exists(config.poppler_path):
+                kwargs['poppler_path'] = config.poppler_path
+            
+            images = convert_from_path(pdf_path, **kwargs)
+            
+            if images:
+                page_text = pytesseract.image_to_string(
+                    images[0], 
+                    lang=config.ocr_languages,
+                    config=config.get_tesseract_config()
+                )
+                return page_text
+            
+            return ""
+        except Exception as e:
+            logger.error(f"Błąd OCR dla strony {page_num}: {e}")
+            return ""
+    
+    def _parse_single_invoice(self, text: str, tables: List) -> Dict:
+        """Parsuje pojedynczą fakturę"""
+        try:
+            # Wybierz parser
+            if self.parser_type == 'universal':
+                parser = UniversalParser()
+            elif self.parser_type == 'atut':
+                parser = ATUTParser()
+            elif self.parser_type == 'bolt':
+                parser = BoltParser()
+            else:
+                # Auto - rozpoznaj typ
+                detector = InvoiceDetector()
+                invoice_type = detector.detect_type(text)
+                
+                if invoice_type == InvoiceType.ATUT:
+                    parser = ATUTParser()
+                elif invoice_type == InvoiceType.BOLT:
+                    parser = BoltParser()
+                else:
+                    parser = UniversalParser()
+            
+            # Parsuj fakturę
+            return parser.parse(text, tables)
+            
+        except Exception as e:
+            logger.error(f"Błąd parsowania faktury: {e}")
+            return {}
+    
+    def _is_valid_invoice(self, invoice_data: Dict) -> bool:
+        """Sprawdza czy dane faktury są wystarczające"""
+        # Sprawdź czy są jakiekolwiek istotne dane
+        has_number = bool(invoice_data.get('invoice_number'))
+        has_date = bool(invoice_data.get('invoice_date'))
+        has_seller = bool(invoice_data.get('seller', {}).get('name'))
+        has_buyer = bool(invoice_data.get('buyer', {}).get('name'))
+        has_amounts = bool(
+            invoice_data.get('summary', {}).get('gross_total', '0.00') != '0.00' or
+            invoice_data.get('items')
+        )
+        
+        # Wymagamy przynajmniej 2 z 5 elementów
+        valid_elements = sum([has_number, has_date, has_seller, has_buyer, has_amounts])
+        return valid_elements >= 2
     
     def extract_from_pdf(self, pdf_path: str) -> Dict:
         """Ekstraktuje dane z PDF używając OCR jeśli potrzeba i odpowiedniego parsera"""
@@ -453,3 +607,32 @@ class PDFProcessor:
                         items.append(item)
         
         return items
+    
+    def extract_text_and_tables(self, pdf_path: str):
+        """Ekstraktuje tekst i tabele z PDF (metoda pomocnicza dla testów)"""
+        text = ""
+        all_tables = []
+        
+        try:
+            # Próba ekstrakcji tekstu natywnego
+            with pdfplumber.open(pdf_path) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+                    
+                    # Próba ekstrakcji tabel
+                    tables = page.extract_tables()
+                    if tables:
+                        all_tables.extend(tables)
+            
+            # Jeśli brak tekstu, użyj OCR
+            if len(text.strip()) < 100:
+                logger.info("Używam OCR do ekstrakcji...")
+                text = self._extract_with_ocr(pdf_path)
+            
+            return text, all_tables
+        
+        except Exception as e:
+            logger.error(f"Błąd ekstrakcji tekstu i tabel: {e}")
+            return "", []

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dokumenty>
+  <Dokument Typ="ZAKUP">
+    <Naglowek>
+      <Numer>FA/123/2025</Numer>
+      <DataWystawienia>2025-08-01</DataWystawienia>
+      <DataSprzedazy>2025-08-01</DataSprzedazy>
+      <Kontrahent>
+        <NIP>5252822767</NIP>
+        <Nazwa>GOOGLE CLOUD POLAND SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ</Nazwa>
+        <Adres>ul. Emilii Plater 53, Warszawa, 00-113</Adres>
+      </Kontrahent>
+      <FormaPlatnosci>przelew</FormaPlatnosci>
+      <TerminPlatnosci>2025-08-08</TerminPlatnosci>
+    </Naglowek>
+    <Pozycje>
+      <Pozycja>
+        <Opis>Usługi dozoru, transportu, informatyczne, pozostałe</Opis>
+        <Ilosc>1</Ilosc>
+        <CenaNetto>511.42</CenaNetto>
+        <VAT>23</VAT>
+        <KwotaVAT>117.63</KwotaVAT>
+        <KontoKsiegowe>402-13</KontoKsiegowe>
+      </Pozycja>
+    </Pozycje>
+    <RejestrVAT>
+      <Typ>Rejestr zakupu</Typ>
+      <StawkaVAT>23</StawkaVAT>
+      <Netto>511.42</Netto>
+      <VAT>117.63</VAT>
+    </RejestrVAT>
+    <Platnosc>
+      <Kwota>629.05</Kwota>
+      <Waluta>EUR</Waluta>
+      <DataPlatnosci>2025-08-08</DataPlatnosci>
+    </Platnosc>
+  </Dokument>
+</Dokumenty>
+
+
+1. Header Section (<Naglowek>)
+This captures basic invoice metadata.
+
+<Numer>: Invoice number (e.g., "FA/123/2025").
+<DataWystawienia>: Issue date (ISO format: YYYY-MM-DD).
+<DataSprzedazy>: Sale date (often same as issue date for purchases).
+<DataKsiegowania>: Accounting date.
+<TypDokumentu>: "ZAKUP" for purchase invoices.
+<Kontrahent>: Supplier details.
+
+<NIP>: Tax ID (Polish NIP or EU VAT number).
+<Nazwa>: Full name.
+<Adres>: Address (street, city, postal code, country).
+<KodKraju>: Country code (e.g., "PL").
+
+
+<FormaPlatnosci>: Payment method (e.g., "przelew" for bank transfer).
+<TerminPlatnosci>: Due date.
+<Waluta>: Currency (e.g., "PLN", "EUR"); include exchange rate if non-PLN.
+
+2. Line Items Section (<Pozycje>)
+Details individual products or services.
+
+Multiple <Pozycja> elements.
+<Opis>: Description.
+<Ilosc>: Quantity.
+<Jednostka>: Unit (e.g., "szt." for pieces).
+<CenaNetto>: Net price per unit.
+<WartoscNetto>: Total net value.
+<StawkaVAT>: VAT rate (e.g., "23" for 23%).
+<KwotaVAT>: VAT amount.
+<WartoscBrutto>: Gross value.
+<KategoriaKsiegowa>: Accounting category (e.g., "401-05" for materials).
+<CentrumKosztowe>: Cost center if applicable.
+
+3. VAT Register Section (<RejestrVAT>)
+Integrates with Optima's VAT module for tax deduction.
+
+<Typ>: "Rejestr zakupu" for purchases.
+<StawkaVAT>: Matches line items.
+<Netto>: Total net.
+<VAT>: Total VAT (deductible or non-deductible).
+<Brutto>: Total gross.
+<Odliczalny>: "Tak" if VAT is deductible.
+<JPK>: Flags for JPK_V7 compliance (e.g., "TP" for related parties).
+
+4. Payments Section (<Platnosci>)
+Optional but useful for scheduling.
+
+<Platnosc>: Per payment.
+
+<Kwota>: Amount.
+<DataPlatnosci>: Payment date.
+<RachunekBankowy>: Bank account (IBAN format).
+<Status>: "rozchód" for outgoing.
+
+
+
+5. Additional Elements
+
+<Notatki>: Notes or comments.
+<Zalaczniki>: References to attachments (e.g., PDF filenames).
+<Korekta>: For corrections, include original invoice reference.
+<Wersja>: Schema version (e.g., "2.00" as seen in samples).
+
+For batch imports, enclose in <Dokumenty> with multiple <Dokument> children. The file must be well-formed XML; use tools like XMLSpy or online validators to check.
+Table: Key XML Elements and Their Properties
+
+
+
+
+
+
+Element PathDescriptionData TypeRequired?Example ValueNotes/Dokumenty/Dokument/Naglowek/NumerInvoice numberStringYes"914/25/ZAKUP"Unique identifier; matches supplier's format./Dokumenty/Dokument/Naglowek/DataWystawieniaIssue dateDate (YYYY-MM-DD)Yes"2025-08-01"Affects VAT period./Dokumenty/Dokument/Kontrahent/NIPSupplier tax IDString (10 digits for PL)Yes"5252822767"Validated against GUS/VIES./Dokumenty/Dokument/Pozycje/Pozycja/OpisItem descriptionStringYes"Usługi dozoru, transportu, informatyczne,pozostałe"Up to 255 characters./Dokumenty/Dokument/Pozycje/Pozycja/StawkaVATVAT rateIntegerYes23Common rates: 0, 5, 8, 23; "zw" for exempt./Dokumenty/Dokument/RejestrVAT/NettoTotal net amountDecimalYes511.42Precision to 2 decimal places./Dokumenty/Dokument/Platnosci/Platnosc/KwotaPayment amountDecimalNo629.05Links to bank module if enabled./Dokumenty/Dokument/Naglowek/WalutaCurrencyString (3 letters)No (default PLN)"EUR"Requires kurs from NBP table.

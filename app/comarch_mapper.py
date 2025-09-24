@@ -61,15 +61,54 @@ class ComarchMapper:
         
         comarch_data = ComarchInvoiceData()
         
+        # Obsługa zarówno słowników jak i obiektów
+        if isinstance(invoice_data, dict):
+            # Dla słowników
+            invoice_number = invoice_data.get('invoice_number')
+            invoice_date = invoice_data.get('invoice_date')
+            sale_date = invoice_data.get('sale_date')
+            
+            seller_info = invoice_data.get('seller', {})
+            seller_name = seller_info.get('name')
+            seller_nip = seller_info.get('nip')
+            
+            payment_info = invoice_data.get('payment', {})
+            payment_method = payment_info.get('method')
+            payment_date = payment_info.get('due_date')
+            
+            items = invoice_data.get('items', [])
+            
+            summary = invoice_data.get('summary', {})
+            net_total = summary.get('net_total', 0)
+            vat_total = summary.get('vat_total', 0)
+            gross_total = summary.get('gross_total', 0)
+        else:
+            # Dla obiektów z atrybutami
+            invoice_number = getattr(invoice_data, 'invoice_number', None)
+            invoice_date = getattr(invoice_data, 'invoice_date', None)
+            sale_date = getattr(invoice_data, 'sale_date', None)
+            
+            seller_name = getattr(invoice_data, 'seller_name', None)
+            seller_nip = getattr(invoice_data, 'seller_nip', None)
+            
+            payment_method = getattr(invoice_data, 'payment_method', None)
+            payment_date = getattr(invoice_data, 'payment_date', None)
+            
+            items = getattr(invoice_data, 'items', [])
+            
+            net_total = getattr(invoice_data, 'net_total', 0)
+            vat_total = getattr(invoice_data, 'vat_total', 0)
+            gross_total = getattr(invoice_data, 'gross_total', 0)
+        
         # Mapowanie podstawowych danych
-        comarch_data.invoice_number = self._clean_invoice_number(invoice_data.invoice_number)
-        comarch_data.issue_date = self._format_date(invoice_data.invoice_date)
-        comarch_data.sale_date = self._format_date(invoice_data.sale_date) if invoice_data.sale_date else comarch_data.issue_date
+        comarch_data.invoice_number = self._clean_invoice_number(invoice_number)
+        comarch_data.issue_date = self._format_date(invoice_date)
+        comarch_data.sale_date = self._format_date(sale_date) if sale_date else comarch_data.issue_date
         
         # Mapowanie sprzedawcy
-        comarch_data.seller_name = self._clean_company_name(invoice_data.seller_name)
-        comarch_data.seller_nip = self._format_nip(invoice_data.seller_nip)
-        comarch_data.seller_code = self._generate_seller_code(invoice_data.seller_name, invoice_data.seller_nip)
+        comarch_data.seller_name = self._clean_company_name(seller_name)
+        comarch_data.seller_nip = self._format_nip(seller_nip)
+        comarch_data.seller_code = self._generate_seller_code(seller_name, seller_nip)
         
         # Mapowanie nabywcy (zawsze 2Vision)
         comarch_data.buyer_name = self.default_buyer['name']
@@ -78,19 +117,19 @@ class ComarchMapper:
         comarch_data.buyer_address = self.default_buyer['address']
         
         # Mapowanie płatności
-        comarch_data.payment_method = self._map_payment_method(invoice_data.payment_method)
-        comarch_data.payment_date = self._format_date(invoice_data.payment_date) if invoice_data.payment_date else self._calculate_payment_date(comarch_data.issue_date)
+        comarch_data.payment_method = self._map_payment_method(payment_method)
+        comarch_data.payment_date = self._format_date(payment_date) if payment_date else self._calculate_payment_date(comarch_data.issue_date)
         
         # Mapowanie pozycji
-        if invoice_data.items:
-            comarch_data.items = self._map_items(invoice_data.items)
+        if items:
+            comarch_data.items = self._map_items(items)
         else:
-            comarch_data.items = self._create_single_item(invoice_data)
+            comarch_data.items = self._create_single_item_from_dict(invoice_data) if isinstance(invoice_data, dict) else self._create_single_item(invoice_data)
         
         # Mapowanie sum - sprawdzenie wartości 10000
-        net = float(invoice_data.net_total or 0)
-        vat = float(invoice_data.vat_total or 0)
-        gross = float(invoice_data.gross_total or 0)
+        net = float(net_total or 0)
+        vat = float(vat_total or 0)
+        gross = float(gross_total or 0)
         
         # Jeśli wartości to 10000, spróbuj obliczyć z pozycji
         if gross == 10000.0 and net == 0.0:
@@ -283,6 +322,42 @@ class ComarchMapper:
         description = "Zakup towaru/usługi"
         if invoice_data.seller_name and invoice_data.seller_name not in [':', 'None', '']:
             description = f"Faktura od {invoice_data.seller_name}"
+        
+        return [{
+            'lp': 1,
+            'description': description,
+            'quantity': 1,
+            'unit': 'szt.',
+            'unit_price': net_value,
+            'net_value': net_value,
+            'vat_rate': vat_rate,
+            'vat_amount': vat_value,
+            'gross_value': gross_value
+        }]
+    
+    def _create_single_item_from_dict(self, invoice_data: Dict) -> List[Dict]:
+        """Tworzy pojedynczą pozycję dla słownika danych"""
+        summary = invoice_data.get('summary', {})
+        net_value = float(summary.get('net_total', 0))
+        vat_value = float(summary.get('vat_total', 0))
+        gross_value = float(summary.get('gross_total', 0))
+        
+        # Sprawdź czy wartości nie są domyślne 10000
+        if gross_value == 10000.0 and net_value == 0.0:
+            logger.warning("Detected default values in single item from dict, resetting to 0")
+            net_value = 0.0
+            vat_value = 0.0
+            gross_value = 0.0
+        
+        vat_rate = 23
+        if net_value > 0 and vat_value > 0:
+            vat_rate = round((vat_value / net_value) * 100)
+        
+        description = "Zakup towaru/usługi"
+        seller_info = invoice_data.get('seller', {})
+        seller_name = seller_info.get('name')
+        if seller_name and seller_name not in [':', 'None', '']:
+            description = f"Faktura od {seller_name}"
         
         return [{
             'lp': 1,

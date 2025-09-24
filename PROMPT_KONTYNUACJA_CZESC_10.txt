@@ -1,0 +1,78 @@
+# PROMPT DO KONTYNUACJI - CZĘŚĆ 10
+
+## KONTEKST
+Pracujemy nad systemem parsowania faktur PDF do XML (format Comarch Optima).  
+Lokalizacja: `C:\pdf-to-xml-app`
+
+## WYKONANE DZIAŁANIA (Część 9)
+1. ✅ **NAPRAWIONO BŁĄD MAPPERA**: ComarchMapper teraz obsługuje zarówno słowniki jak i obiekty
+2. ✅ Dodano metodę `_create_single_item_from_dict` do obsługi słowników
+3. ✅ System poprawnie przetwarza wielostronicowe PDF i generuje XML
+4. ✅ Utworzono skrypt testowy `test_mapper_fix.py` do weryfikacji poprawek
+
+## PLIKI ZAKTUALIZOWANE
+* `app\comarch_mapper.py` - naprawiona obsługa słowników
+* `skrypty_testowe\test_mapper_fix.py` - nowy test weryfikujący poprawki
+
+## AKTUALNY STATUS
+✅ System działa i poprawnie generuje XML zgodny z formatem Comarch Optima  
+✅ Obsługuje wielostronicowe PDF (każda strona = osobna faktura)  
+✅ Pomija strony nie będące fakturami  
+✅ Generuje XML ze strukturą:
+```xml
+<Dokumenty>
+  <Dokument Typ="ZAKUP">
+    <Naglowek>
+      <Numer>...</Numer>
+      <DataWystawienia>...</DataWystawienia>
+      <Kontrahent>
+        <NIP>...</NIP>
+        <Nazwa>...</Nazwa>
+      </Kontrahent>
+    </Naglowek>
+    <Pozycje>...</Pozycje>
+    <RejestrVAT>...</RejestrVAT>
+    <Platnosc>...</Platnosc>
+  </Dokument>
+</Dokumenty>
+```
+
+## JAK UŻYWAĆ SYSTEMU
+1. Umieść pliki PDF w `C:\pdf-to-xml-app\input\`
+2. Uruchom: `python konwertuj_wszystkie_do_xml.py`
+3. XML zostanie zapisany w `output\wszystkie_faktury.xml`
+4. Do testowania użyj: `python skrypty_testowe\test_mapper_fix.py`
+
+## DO EWENTUALNEJ KONTYNUACJI
+
+### PRIORYTET 1 - Poprawa jakości parsowania
+1. **Lepsza ekstrakcja danych sprzedawcy** - obecnie niektóre pola mogą być puste
+2. **Dokładniejsza ekstrakcja adresów** - rozdzielenie na ulicę, miasto, kod pocztowy
+3. **Lepsza obsługa różnych formatów dat** - niektóre daty mogą być nieprawidłowo parsowane
+
+### PRIORYTET 2 - Rozszerzenie funkcjonalności  
+1. **Obsługa faktur wielostronicowych** - gdy jedna faktura zajmuje kilka stron
+2. **Rozpoznawanie walut** - obecnie domyślnie PLN
+3. **Dodanie kursów walut** dla faktur w EUR/USD
+
+### PRIORYTET 3 - Interfejs użytkownika
+1. **GUI** - prosty interfejs graficzny do wyboru plików
+2. **Podgląd wyników** przed generowaniem XML
+3. **Edycja danych** przed eksportem
+
+### PRIORYTET 4 - Optymalizacja
+1. **Równoległe przetwarzanie** wielu plików
+2. **Cache** dla już przetworzonych faktur
+3. **Logi** z szczegółowymi informacjami o przetwarzaniu
+
+## ZASADY PRACY
+1. Działaj bezpośrednio na plikach, nie usuwaj działających funkcjonalności
+2. Dziel wprowadzanie zmian tak aby nie przekroczyć limitów odpowiedzi  
+3. Po każdych zmianach przygotuj skrypt testowy w `C:\pdf-to-xml-app\skrypty_testowe\`
+4. Pytaj przed wprowadzeniem zmian
+5. Sprawdź czy powstający XML ma odpowiednią strukturę -> "C:\pdf-to-xml-app\instrukcja wzoru xml.txt"
+
+## UWAGI
+- System jest obecnie funkcjonalny i generuje poprawny XML
+- Może wymagać dostosowania dla specyficznych formatów faktur
+- Testuj zawsze na kopii danych produkcyjnych
