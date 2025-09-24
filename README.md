@@ -285,3 +285,4 @@ Przykładowe pliki XML w katalogu:
 ---
 
 💡 **Wskazówka:** Zawsze sprawdź wygenerowany XML przed importem do Comarch ERP Optima!
+:)
