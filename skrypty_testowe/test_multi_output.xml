@@ -1,0 +1,144 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Dokumenty>
+  <Dokument Typ="ZAKUP">
+    <Naglowek>
+      <Numer>FA/1/2025</Numer>
+      <DataWystawienia>2025-08-01</DataWystawienia>
+      <DataSprzedazy>2025-08-01</DataSprzedazy>
+      <DataKsiegowania>2025-09-24</DataKsiegowania>
+      <Kontrahent>
+        <NIP>5252822761</NIP>
+        <Nazwa>Dostawca 1 Sp. z o.o.</Nazwa>
+        <Adres>brak danych adresowych</Adres>
+        <KodKraju>PL</KodKraju>
+      </Kontrahent>
+      <FormaPlatnosci>przelew</FormaPlatnosci>
+      <TerminPlatnosci>2025-08-11</TerminPlatnosci>
+      <Waluta>PLN</Waluta>
+    </Naglowek>
+    <Pozycje>
+      <Pozycja>
+        <Opis>Towar/Usługa 1</Opis>
+        <Ilosc>1.0</Ilosc>
+        <Jednostka>szt.</Jednostka>
+        <CenaNetto>100.00</CenaNetto>
+        <WartoscNetto>100.00</WartoscNetto>
+        <StawkaVAT>23</StawkaVAT>
+        <KwotaVAT>23.00</KwotaVAT>
+        <WartoscBrutto>123.00</WartoscBrutto>
+        <KategoriaKsiegowa>401-05</KategoriaKsiegowa>
+        <KontoKsiegowe>401-05</KontoKsiegowe>
+      </Pozycja>
+    </Pozycje>
+    <RejestrVAT>
+      <Typ>Rejestr zakupu</Typ>
+      <StawkaVAT>23</StawkaVAT>
+      <Netto>100.00</Netto>
+      <VAT>23.00</VAT>
+      <Brutto>123.00</Brutto>
+      <Brutto>123.00</Brutto>
+      <Odliczalny>Tak</Odliczalny>
+    </RejestrVAT>
+    <Platnosc>
+      <Kwota>123.00</Kwota>
+      <Waluta>PLN</Waluta>
+      <DataPlatnosci>2025-08-11</DataPlatnosci>
+      <Status>rozchód</Status>
+    </Platnosc>
+    <Wersja>2.00</Wersja>
+  </Dokument>
+  <Dokument Typ="ZAKUP">
+    <Naglowek>
+      <Numer>FA/2/2025</Numer>
+      <DataWystawienia>2025-08-02</DataWystawienia>
+      <DataSprzedazy>2025-08-02</DataSprzedazy>
+      <DataKsiegowania>2025-09-24</DataKsiegowania>
+      <Kontrahent>
+        <NIP>5252822762</NIP>
+        <Nazwa>Dostawca 2 Sp. z o.o.</Nazwa>
+        <Adres>brak danych adresowych</Adres>
+        <KodKraju>PL</KodKraju>
+      </Kontrahent>
+      <FormaPlatnosci>przelew</FormaPlatnosci>
+      <TerminPlatnosci>2025-08-12</TerminPlatnosci>
+      <Waluta>PLN</Waluta>
+    </Naglowek>
+    <Pozycje>
+      <Pozycja>
+        <Opis>Towar/Usługa 2</Opis>
+        <Ilosc>2.0</Ilosc>
+        <Jednostka>szt.</Jednostka>
+        <CenaNetto>200.00</CenaNetto>
+        <WartoscNetto>400.00</WartoscNetto>
+        <StawkaVAT>23</StawkaVAT>
+        <KwotaVAT>92.00</KwotaVAT>
+        <WartoscBrutto>492.00</WartoscBrutto>
+        <KategoriaKsiegowa>401-05</KategoriaKsiegowa>
+        <KontoKsiegowe>401-05</KontoKsiegowe>
+      </Pozycja>
+    </Pozycje>
+    <RejestrVAT>
+      <Typ>Rejestr zakupu</Typ>
+      <StawkaVAT>23</StawkaVAT>
+      <Netto>400.00</Netto>
+      <VAT>92.00</VAT>
+      <Brutto>492.00</Brutto>
+      <Brutto>492.00</Brutto>
+      <Odliczalny>Tak</Odliczalny>
+    </RejestrVAT>
+    <Platnosc>
+      <Kwota>492.00</Kwota>
+      <Waluta>PLN</Waluta>
+      <DataPlatnosci>2025-08-12</DataPlatnosci>
+      <Status>rozchód</Status>
+    </Platnosc>
+    <Wersja>2.00</Wersja>
+  </Dokument>
+  <Dokument Typ="ZAKUP">
+    <Naglowek>
+      <Numer>FA/3/2025</Numer>
+      <DataWystawienia>2025-08-03</DataWystawienia>
+      <DataSprzedazy>2025-08-03</DataSprzedazy>
+      <DataKsiegowania>2025-09-24</DataKsiegowania>
+      <Kontrahent>
+        <NIP>5252822763</NIP>
+        <Nazwa>Dostawca 3 Sp. z o.o.</Nazwa>
+        <Adres>brak danych adresowych</Adres>
+        <KodKraju>PL</KodKraju>
+      </Kontrahent>
+      <FormaPlatnosci>przelew</FormaPlatnosci>
+      <TerminPlatnosci>2025-08-13</TerminPlatnosci>
+      <Waluta>PLN</Waluta>
+    </Naglowek>
+    <Pozycje>
+      <Pozycja>
+        <Opis>Towar/Usługa 3</Opis>
+        <Ilosc>3.0</Ilosc>
+        <Jednostka>szt.</Jednostka>
+        <CenaNetto>300.00</CenaNetto>
+        <WartoscNetto>900.00</WartoscNetto>
+        <StawkaVAT>23</StawkaVAT>
+        <KwotaVAT>207.00</KwotaVAT>
+        <WartoscBrutto>1107.00</WartoscBrutto>
+        <KategoriaKsiegowa>401-05</KategoriaKsiegowa>
+        <KontoKsiegowe>401-05</KontoKsiegowe>
+      </Pozycja>
+    </Pozycje>
+    <RejestrVAT>
+      <Typ>Rejestr zakupu</Typ>
+      <StawkaVAT>23</StawkaVAT>
+      <Netto>900.00</Netto>
+      <VAT>207.00</VAT>
+      <Brutto>1107.00</Brutto>
+      <Brutto>1107.00</Brutto>
+      <Odliczalny>Tak</Odliczalny>
+    </RejestrVAT>
+    <Platnosc>
+      <Kwota>1107.00</Kwota>
+      <Waluta>PLN</Waluta>
+      <DataPlatnosci>2025-08-13</DataPlatnosci>
+      <Status>rozchód</Status>
+    </Platnosc>
+    <Wersja>2.00</Wersja>
+  </Dokument>
+</Dokumenty>

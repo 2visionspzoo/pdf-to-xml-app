@@ -13,24 +13,32 @@ class InvoiceItem:
     def __init__(self):
         self.lp: Optional[int] = None
         self.name: str = ""
+        self.description: str = ""  # Alias dla kompatybilności
         self.pkwiu: Optional[str] = None
         self.quantity: Decimal = Decimal('0')
         self.unit: str = ""
         self.unit_price_net: Decimal = Decimal('0')
+        self.unit_price: Decimal = Decimal('0')  # Alias dla kompatybilności
         self.net_amount: Decimal = Decimal('0')
         self.vat_rate: str = "23%"
         self.vat_amount: Decimal = Decimal('0')
         self.gross_amount: Decimal = Decimal('0')
     
     def to_dict(self) -> Dict:
-        """Konwertuje do słownika"""
+        """Konwertuje do słownika z kompatybilnością wsteczną"""
+        # Używamy wartości z name lub description, zależnie która jest wypełniona
+        name_value = self.name or self.description or ''
+        unit_price_value = self.unit_price_net or self.unit_price or Decimal('0')
+        
         return {
             'lp': self.lp,
-            'name': self.name,
+            'name': name_value,
+            'description': name_value,  # Dla kompatybilności wstecznej
             'pkwiu': self.pkwiu,
             'quantity': str(self.quantity),
             'unit': self.unit,
-            'unit_price_net': str(self.unit_price_net),
+            'unit_price_net': str(unit_price_value),
+            'unit_price': str(unit_price_value),  # Dla kompatybilności wstecznej
             'net_amount': str(self.net_amount),
             'vat_rate': self.vat_rate,
             'vat_amount': str(self.vat_amount),

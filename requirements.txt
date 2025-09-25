@@ -1,38 +1,20 @@
-# Core dependencies
-pdf2image==1.16.3
-pytesseract==0.3.10
+# Core dependencies for PDF processing and OCR
+pdfplumber>=0.10.2
+pytesseract>=0.3.10
+pdf2image>=1.16.3
 Pillow>=10.0.0
 
 # XML processing
 lxml>=4.9.3
-defusedxml>=0.7.1
 
 # Data processing
 python-dateutil>=2.8.2
-openpyxl>=3.1.2
-pandas>=2.0.3
 
-# Logging and utilities
-colorama>=0.4.6
-tqdm>=4.66.1
+# NLP for entity recognition
+spacy>=3.4.0
 
-# OCR improvements
-opencv-python>=4.8.0.74
-numpy>=1.24.3
+# API calls for NIP validation
+requests>=2.26.0
 
-# PDF processing
-PyPDF2>=3.0.1
-pdfplumber>=0.10.2
-camelot-py[cv]>=0.11.0
-
-# Testing (optional, for development)
-pytest>=7.4.0
-pytest-cov>=4.1.0
-
-# GUI (optional, if using GUI)
-tkinter  # Usually comes with Python
-# PyQt5>=5.15.9  # Alternative GUI option
-
-# Type hints and validation
-pydantic>=2.0.0
-typing-extensions>=4.7.1
+# Note: Install spacy model with: python -m spacy download pl_core_news_sm
+# Note: Tkinter is included with Python, no need to install separately

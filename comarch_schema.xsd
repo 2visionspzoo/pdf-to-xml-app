@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!-- Definicja głównego elementu Dokumenty -->
+  <xs:element name="Dokumenty">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Dokument" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Naglowek" type="NaglowekType"/>
+              <xs:element name="Pozycje" type="PozycjeType"/>
+              <xs:element name="RejestrVAT" type="RejestrVATType"/>
+              <xs:element name="Platnosc" type="PlatnoscType"/>
+              <xs:element name="Korekta" type="xs:string" minOccurs="0"/>
+              <xs:element name="Wersja" type="xs:string"/>
+            </xs:sequence>
+            <xs:attribute name="Typ" type="xs:string" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Typ Naglowek -->
+  <xs:complexType name="NaglowekType">
+    <xs:sequence>
+      <xs:element name="Numer" type="xs:string"/>
+      <xs:element name="DataWystawienia" type="xs:date"/>
+      <xs:element name="DataSprzedazy" type="xs:date"/>
+      <xs:element name="DataKsiegowania" type="xs:date"/>
+      <xs:element name="Kontrahent" type="KontrahentType"/>
+      <xs:element name="FormaPlatnosci" type="xs:string"/>
+      <xs:element name="TerminPlatnosci" type="xs:date"/>
+      <xs:element name="Waluta" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Typ Kontrahent -->
+  <xs:complexType name="KontrahentType">
+    <xs:sequence>
+      <xs:element name="NIP" type="xs:string" minOccurs="0"/>
+      <xs:element name="Nazwa" type="xs:string"/>
+      <xs:element name="Adres" type="xs:string"/>
+      <xs:element name="KodKraju" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Typ Pozycje -->
+  <xs:complexType name="PozycjeType">
+    <xs:sequence>
+      <xs:element name="Pozycja" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Opis" type="xs:string"/>
+            <xs:element name="Ilosc" type="xs:decimal"/>
+            <xs:element name="Jednostka" type="xs:string"/>
+            <xs:element name="CenaNetto" type="xs:decimal"/>
+            <xs:element name="WartoscNetto" type="xs:decimal"/>
+            <xs:element name="StawkaVAT" type="xs:string"/>
+            <xs:element name="KwotaVAT" type="xs:decimal"/>
+            <xs:element name="WartoscBrutto" type="xs:decimal"/>
+            <xs:element name="KategoriaKsiegowa" type="xs:string"/>
+            <xs:element name="KontoKsiegowe" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Typ RejestrVAT -->
+  <xs:complexType name="RejestrVATType">
+    <xs:sequence>
+      <xs:element name="Typ" type="xs:string"/>
+      <xs:element name="StawkaVAT" type="xs:string" maxOccurs="unbounded"/>
+      <xs:element name="Netto" type="xs:decimal" maxOccurs="unbounded"/>
+      <xs:element name="VAT" type="xs:decimal" maxOccurs="unbounded"/>
+      <xs:element name="Brutto" type="xs:decimal" maxOccurs="unbounded"/>
+      <xs:element name="JPK" type="xs:string" minOccurs="0"/>
+      <xs:element name="Odliczalny" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Typ Platnosc -->
+  <xs:complexType name="PlatnoscType">
+    <xs:sequence>
+      <xs:element name="Kwota" type="xs:decimal"/>
+      <xs:element name="Waluta" type="xs:string"/>
+      <xs:element name="DataPlatnosci" type="xs:date"/>
+      <xs:element name="Status" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>
